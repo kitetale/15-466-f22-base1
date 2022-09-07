@@ -225,7 +225,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	ppu.sprites[1].x = int8_t(player_at.x-8);
 	ppu.sprites[1].y = int8_t(player_at.y);
-	ppu.sprites[1].index = 33;
+	ppu.sprites[1].index = 34;
 	ppu.sprites[1].attributes = 7;
 
 	ppu.sprites[2].x = int8_t(player_at.x-16);
