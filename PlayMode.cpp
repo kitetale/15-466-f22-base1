@@ -38,9 +38,9 @@ PlayMode::PlayMode() {
 		}
 	}
 
-	//use sprite 32, 33, 34, 35 as catto:
+	//use sprite 32-47
 	//reset table for these
-	for (uint16_t index = 32; index < 36; ++index){
+	for (uint16_t index = 32; index < 48; ++index){
 		ppu.tile_table[index].bit0 = {
 			0,0,0,0,0,0,0,0
 		};
@@ -63,10 +63,17 @@ PlayMode::PlayMode() {
 		glm::u8vec4(0x81, 0x4a, 0x00, 0xff), //brown
 		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
 	};
+	// leaf
+	ppu.palette_table[5] = {
+		glm::u8vec4(0x54, 0x88, 0x33, 0xff), //green
+		glm::u8vec4(0x35, 0x53, 0x22, 0xff), //dark green
+		glm::u8vec4(0x81, 0x4a, 0x00, 0xff), //brown
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
+	};
 
-	glm::uvec2 size (16,16);
+	glm::uvec2 size (32,32);
 	std::vector< glm::u8vec4 > data;
-	load_png("catto.png", &size, &data, LowerLeftOrigin); 
+	load_png("catto_num_leaf.png", &size, &data, LowerLeftOrigin); 
 	
 	// data contains pixel color info (all 4 tiles) from catto.png
 	// 1. loop through and compare to find index of color
@@ -74,18 +81,28 @@ PlayMode::PlayMode() {
 	// sprite 33, 34, 35 are cat body, leg, tail
 
 	// cat 
-	// sprite location on catto.png : 
-	// 34  35
-	// 32  33
+	// sprite location on catto_num_leaf.png : 
+	// 44   45   46c  47
+	// 40   41   42   43
+	// 36c  37c  38   39
+	// 32c  33c  34   35
+
+	// note : realized I flipped row & col variable name compared to convention -- but logic still holds!
+	// r: 1 2 3 4
+	// c: 4
+	//    3
+	//    2
+	//    1
 	uint16_t table_index = 7;
-	for (uint16_t col = 0; col < 2; ++col) {
-		for (uint16_t row = 0; row < 2; ++row) {
+	for (uint16_t col = 0; col < 4; ++col) { // col tile
+		for (uint16_t row = 0; row < 4; ++row) { // row tile
 			for (uint16_t index_i = 0; index_i < 8; ++index_i){ // col
 				for (uint16_t index_j = 0; index_j < 8; ++index_j){ // row
-					glm::u8vec4 pixel = data[(index_j + row*8) + (index_i + col*8) *16];
+					glm::u8vec4 pixel = data[(index_j + row*8) + (index_i + col*8) *32];
 					for (uint16_t index_k = 0; index_k < 4; ++index_k) { //index in palette
-						if (!(col==0 && row==0) && table_index!=6) table_index = 6;
-						if (ppu.palette_table[7][index_k] == pixel) {
+						if (col==3 && row==2) table_index = 6; //change palette to get brown
+						if (col==3 && row==3) table_index = 5; //change palette to get leaf
+						if (ppu.palette_table[table_index][index_k] == pixel) {
 							// found the index on palette
 							// bit0 = index_k & 0x1
 							// bit1 = (index_k >> 1) & 0x1
@@ -95,30 +112,14 @@ PlayMode::PlayMode() {
 							// ppu.tile_table[32].bit1[index_i] = (ppu.tile_table[32].bit1[index_i]<<1) | ((index_k >> 1) & 0x1);
 
 							// correct orientation
-							ppu.tile_table[32+row+col*2].bit0[index_i] = ((index_k & 0x1) << index_j) | ppu.tile_table[32+row+col*2].bit0[index_i];
-							ppu.tile_table[32+row+col*2].bit1[index_i] = (((index_k >> 1) & 0x1) << index_j) | ppu.tile_table[32+row+col*2].bit1[index_i];
+							ppu.tile_table[32+row+col*4].bit0[index_i] = ((index_k & 0x1) << index_j) | ppu.tile_table[32+row+col*4].bit0[index_i];
+							ppu.tile_table[32+row+col*4].bit1[index_i] = (((index_k >> 1) & 0x1) << index_j) | ppu.tile_table[32+row+col*4].bit1[index_i];
 						}
 					}
 				}
 			}
 		}
 	}
-
-	//makes the outside of tiles 0-16 solid:
-	ppu.palette_table[0] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
-
-	//makes the center of tiles 0-16 solid:
-	ppu.palette_table[1] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
 
 }
 
@@ -225,17 +226,17 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	ppu.sprites[1].x = int8_t(player_at.x-8);
 	ppu.sprites[1].y = int8_t(player_at.y);
-	ppu.sprites[1].index = 34;
+	ppu.sprites[1].index = 33;
 	ppu.sprites[1].attributes = 7;
 
 	ppu.sprites[2].x = int8_t(player_at.x-16);
 	ppu.sprites[2].y = int8_t(player_at.y);
-	ppu.sprites[2].index = 34;
+	ppu.sprites[2].index = 36;
 	ppu.sprites[2].attributes = 7;
 
 	ppu.sprites[3].x = int8_t(player_at.x-24);
 	ppu.sprites[3].y = int8_t(player_at.y);
-	ppu.sprites[3].index = 35;
+	ppu.sprites[3].index = 37;
 	ppu.sprites[3].attributes = 7;
 
 	//--- actually draw ---
