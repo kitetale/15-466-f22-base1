@@ -38,14 +38,16 @@ PlayMode::PlayMode() {
 		}
 	}
 
-	//use sprite 32 as a "cat head":
-	
-	ppu.tile_table[32].bit0 = {
-		0,0,0,0,0,0,0,0
-	};
-	ppu.tile_table[32].bit1 = {
-		0,0,0,0,0,0,0,0
-	};
+	//use sprite 32, 33, 34, 35 as catto:
+	//reset table for these
+	for (uint16_t index = 32; index < 36; ++index){
+		ppu.tile_table[index].bit0 = {
+			0,0,0,0,0,0,0,0
+		};
+		ppu.tile_table[index].bit1 = {
+			0,0,0,0,0,0,0,0
+		};
+	}
 
 	//used for the cat face (player):
 	ppu.palette_table[7] = {
@@ -66,27 +68,41 @@ PlayMode::PlayMode() {
 	std::vector< glm::u8vec4 > data;
 	load_png("catto.png", &size, &data, LowerLeftOrigin); 
 	
-	// data contains pixel color info (all 4 tiles)
+	// data contains pixel color info (all 4 tiles) from catto.png
 	// 1. loop through and compare to find index of color
 	// sprite 32 is cat head 
-	// sprite 0, 1, 2 are cat body, leg, tail
+	// sprite 33, 34, 35 are cat body, leg, tail
 
-	for (uint32_t index_i = 0; index_i < 8; ++index_i) { // col
-		for (uint32_t index_j = 0; index_j < 8; ++index_j) { //row
-			glm::u8vec4 pixel = data[index_j + index_i * 16];
-			for (uint16_t index_k = 0; index_k < 4; ++index_k) { // index in palette
-				if (ppu.palette_table[7][index_k] == pixel) {
-					// found the index on palette
-					// bit0 = index_k & 0x1
-					// bit1 = (index_k >> 1) & 0x1
-					ppu.tile_table[32].bit0[index_i] = (ppu.tile_table[32].bit0[index_i]<<1) | (index_k & 0x1);
-					ppu.tile_table[32].bit1[index_i] = (ppu.tile_table[32].bit1[index_i]<<1) | ((index_k >> 1) & 0x1);
+	// cat 
+	// sprite location on catto.png : 
+	// 34  35
+	// 32  33
+	uint16_t table_index = 7;
+	for (uint16_t col = 0; col < 2; ++col) {
+		for (uint16_t row = 0; row < 2; ++row) {
+			for (uint16_t index_i = 0; index_i < 8; ++index_i){ // col
+				for (uint16_t index_j = 0; index_j < 8; ++index_j){ // row
+					glm::u8vec4 pixel = data[(index_j + row*8) + (index_i + col*8) *16];
+					for (uint16_t index_k = 0; index_k < 4; ++index_k) { //index in palette
+						if (!(col==0 && row==0) && table_index!=6) table_index = 6;
+						if (ppu.palette_table[7][index_k] == pixel) {
+							// found the index on palette
+							// bit0 = index_k & 0x1
+							// bit1 = (index_k >> 1) & 0x1
+
+							// left-right inverted:
+							// ppu.tile_table[32].bit0[index_i] = (ppu.tile_table[32].bit0[index_i]<<1) | (index_k & 0x1);
+							// ppu.tile_table[32].bit1[index_i] = (ppu.tile_table[32].bit1[index_i]<<1) | ((index_k >> 1) & 0x1);
+
+							// correct orientation
+							ppu.tile_table[32+row+col*2].bit0[index_i] = ((index_k & 0x1) << index_j) | ppu.tile_table[32+row+col*2].bit0[index_i];
+							ppu.tile_table[32+row+col*2].bit1[index_i] = (((index_k >> 1) & 0x1) << index_j) | ppu.tile_table[32+row+col*2].bit1[index_i];
+						}
+					}
 				}
 			}
 		}
 	}
-
-	
 
 	//makes the outside of tiles 0-16 solid:
 	ppu.palette_table[0] = {
@@ -206,6 +222,21 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[0].y = int8_t(player_at.y);
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
+
+	ppu.sprites[1].x = int8_t(player_at.x-8);
+	ppu.sprites[1].y = int8_t(player_at.y);
+	ppu.sprites[1].index = 33;
+	ppu.sprites[1].attributes = 7;
+
+	ppu.sprites[2].x = int8_t(player_at.x-16);
+	ppu.sprites[2].y = int8_t(player_at.y);
+	ppu.sprites[2].index = 34;
+	ppu.sprites[2].attributes = 7;
+
+	ppu.sprites[3].x = int8_t(player_at.x-24);
+	ppu.sprites[3].y = int8_t(player_at.y);
+	ppu.sprites[3].index = 35;
+	ppu.sprites[3].attributes = 7;
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
