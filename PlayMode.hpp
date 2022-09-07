@@ -27,7 +27,7 @@ struct PlayMode : Mode {
 	float background_fade = 0.0f;
 
 	//player position:
-	glm::vec2 player_at = glm::vec2(0.0f);
+	glm::vec2 player_at = glm::vec2(30.0f,0.0f);
 
 	//----- drawing handled by PPU466 -----
 

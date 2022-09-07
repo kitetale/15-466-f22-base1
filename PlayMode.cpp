@@ -9,6 +9,7 @@
 //for load_png :
 #include "load_save_png.hpp"
 
+// for randomizing the location of leaf
 #include <random>
 
 PlayMode::PlayMode() {
@@ -96,12 +97,13 @@ PlayMode::PlayMode() {
 	uint16_t table_index = 7;
 	for (uint16_t col = 0; col < 4; ++col) { // col tile
 		for (uint16_t row = 0; row < 4; ++row) { // row tile
+			if (col==3 && row==2) table_index = 6; //change palette to get brown
+			if (col==3 && row==3) table_index = 5; //change palette to get leaf
+			std::cout << table_index << std::endl;
 			for (uint16_t index_i = 0; index_i < 8; ++index_i){ // col
 				for (uint16_t index_j = 0; index_j < 8; ++index_j){ // row
 					glm::u8vec4 pixel = data[(index_j + row*8) + (index_i + col*8) *32];
 					for (uint16_t index_k = 0; index_k < 4; ++index_k) { //index in palette
-						if (col==3 && row==2) table_index = 6; //change palette to get brown
-						if (col==3 && row==3) table_index = 5; //change palette to get leaf
 						if (ppu.palette_table[table_index][index_k] == pixel) {
 							// found the index on palette
 							// bit0 = index_k & 0x1
@@ -219,25 +221,45 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.background_position.y = int32_t(-0.5f * player_at.y);
 
 	//player sprite:
+	// cat head
 	ppu.sprites[0].x = int8_t(player_at.x);
 	ppu.sprites[0].y = int8_t(player_at.y);
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
-
+	// cat front leg
 	ppu.sprites[1].x = int8_t(player_at.x-8);
 	ppu.sprites[1].y = int8_t(player_at.y);
 	ppu.sprites[1].index = 33;
 	ppu.sprites[1].attributes = 7;
-
+	// cat back leg
 	ppu.sprites[2].x = int8_t(player_at.x-16);
 	ppu.sprites[2].y = int8_t(player_at.y);
 	ppu.sprites[2].index = 36;
 	ppu.sprites[2].attributes = 7;
-
+	// cat tail
 	ppu.sprites[3].x = int8_t(player_at.x-24);
 	ppu.sprites[3].y = int8_t(player_at.y);
 	ppu.sprites[3].index = 37;
 	ppu.sprites[3].attributes = 7;
+
+	// leaf sprite at random location:
+	std::default_random_engine generator;
+	std::uniform_int_distribution<int> distribution(1,PPU466::ScreenWidth);
+	ppu.sprites[4].x = int8_t(distribution(generator));
+	ppu.sprites[4].y = int8_t(distribution(generator));
+	ppu.sprites[4].index = 47;
+	ppu.sprites[4].attributes = 7;
+
+	// score:
+	ppu.sprites[5].x = (PPU466::ScreenWidth-8);
+	ppu.sprites[5].y = (PPU466::ScreenHeight-8);
+	ppu.sprites[5].index = 45;
+	ppu.sprites[5].attributes = 7;
+
+	ppu.sprites[6].x = (PPU466::ScreenWidth-16);
+	ppu.sprites[6].y = (PPU466::ScreenHeight-8);
+	ppu.sprites[6].index = 45;
+	ppu.sprites[6].attributes = 7;
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
