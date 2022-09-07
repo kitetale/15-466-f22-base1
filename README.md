@@ -1,8 +1,8 @@
-# (TODO: your game's title)
+# CON-CAT
 
-Author: (TODO: your name)
+Author: Ashley Kim
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: Snake game but with elogated cat
 
 Screen Shot:
 

@@ -108,38 +108,51 @@ PlayMode::~PlayMode() {
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_LEFT) {
 			left.downs += 1;
 			left.pressed = true;
+			// set other keys to false
+			right.pressed = false;
+			up.pressed = false;
+			down.pressed = false;
+			space.pressed = false;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_RIGHT) {
 			right.downs += 1;
 			right.pressed = true;
+			// set other keys to false
+			left.pressed = false;
+			up.pressed = false;
+			down.pressed = false;
+			space.pressed = false;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_UP) {
 			up.downs += 1;
 			up.pressed = true;
+			// set other keys to false
+			left.pressed = false;
+			right.pressed = false;
+			down.pressed = false;
+			space.pressed = false;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_DOWN) {
 			down.downs += 1;
 			down.pressed = true;
-			return true;
-		}
-	} else if (evt.type == SDL_KEYUP) {
-		if (evt.key.keysym.sym == SDLK_LEFT) {
+			// set other keys to false
 			left.pressed = false;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_RIGHT) {
 			right.pressed = false;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_UP) {
 			up.pressed = false;
+			space.pressed = false;
 			return true;
-		} else if (evt.key.keysym.sym == SDLK_DOWN) {
+		} else if (evt.key.keysym.sym == SDLK_SPACE) {
+			space.downs += 1;
+			space.pressed = true;
+			// set other keys to false
+			left.pressed = false;
+			right.pressed = false;
+			up.pressed = false;
 			down.pressed = false;
-			return true;
 		}
 	}
 
@@ -147,11 +160,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-
-	//slowly rotates through [0,1):
-	// (will be used to set background color)
-	background_fade += elapsed / 10.0f;
-	background_fade -= std::floor(background_fade);
 
 	constexpr float PlayerSpeed = 30.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
@@ -171,10 +179,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	//background color will be some hsv-like fade:
 	ppu.background_color = glm::u8vec4(
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 0.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 1.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 2.0f / 3.0f) ) ) ))),
-		0xff
+		0xFFB98F, //orange pastel
+		0xFF9B86, //redish pastel
+		0xD8D6D6, //light gray
+		0xff // white
 	);
 
 	//tilemap gets recomputed every frame as some weird plasma thing:
