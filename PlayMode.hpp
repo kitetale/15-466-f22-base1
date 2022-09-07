@@ -27,10 +27,18 @@ struct PlayMode : Mode {
 	float background_fade = 0.0f;
 
 	//player position:
-	glm::vec2 player_at = glm::vec2(30.0f,0.0f);
+	glm::vec2 player_at = glm::vec2(30.0f,10.0f);
+
+	//leaf position:
+	glm::vec2 leaf = glm::vec2(100.0f,100.0f);
+
+	//ate leaf:
+	bool scored = false;
 
 	//keeping track of score:
 	uint16_t score = 0;
+	uint16_t score1s = 45; //tile index for 0
+	uint16_t score10s = 45; //tile index for 0
 
 	//each tile location
 	//std::deque < glm::vec2 > positions {glm::vec2(), glem::vec2(), }

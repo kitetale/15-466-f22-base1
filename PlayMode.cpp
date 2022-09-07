@@ -9,7 +9,6 @@
 //for load_png :
 #include "load_save_png.hpp"
 
-// for randomizing the location of leaf
 #include <random>
 
 PlayMode::PlayMode() {
@@ -54,7 +53,7 @@ PlayMode::PlayMode() {
 	// background
 	ppu.palette_table[0] = {
 		glm::u8vec4(0x9a, 0xc3, 0xff, 0xff), //blue
-		glm::u8vec4(0xff, 0x9a, 0x9a, 0xff), //pink
+		glm::u8vec4(0xe4, 0xb7, 0xb7, 0xff), //pink
 		glm::u8vec4(0xc4, 0x9a, 0xff, 0xff), //purple
 		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
 	};
@@ -108,7 +107,6 @@ PlayMode::PlayMode() {
 		for (uint16_t row = 0; row < 4; ++row) { // row tile
 			if (col==3 && row==2) table_index = 6; //change palette to get brown
 			if (col==3 && row==3) table_index = 5; //change palette to get leaf
-			std::cout << table_index << std::endl;
 			for (uint16_t index_i = 0; index_i < 8; ++index_i){ // col
 				for (uint16_t index_j = 0; index_j < 8; ++index_j){ // row
 					glm::u8vec4 pixel = data[(index_j + row*8) + (index_i + col*8) *32];
@@ -217,6 +215,55 @@ void PlayMode::update(float elapsed) {
 	//keeps track of everything here 
 	//update value here 
 	//fixed time update 
+
+	// update score if ate leaf
+	if (player_at.x > leaf.x-4 &&
+		player_at.x < leaf.x+4 &&
+		player_at.y > leaf.y-4 &&
+		player_at.y < leaf.y+4 &&
+		score < 100) {
+			++score;
+			scored = true;
+			// update score sprite tile index
+			switch (score % 10) {
+				case 1: score1s = 34; break;
+				case 2: score1s = 35; break;
+				case 3: score1s = 39; break;
+				case 4: score1s = 38; break;
+				case 5: score1s = 40; break;
+				case 6: score1s = 41; break;
+				case 7: score1s = 42; break;
+				case 8: score1s = 43; break;
+				case 9: score1s = 44; break;
+				default: score1s = 45; break;
+			}
+			switch (score / 10) {
+				case 1: score10s = 34; break;
+				case 2: score10s = 35; break;
+				case 3: score10s = 39; break;
+				case 4: score10s = 38; break;
+				case 5: score10s = 40; break;
+				case 6: score10s = 41; break;
+				case 7: score10s = 42; break;
+				case 8: score10s = 43; break;
+				case 9: score10s = 44; break;
+				default: score10s = 45; break;
+			}
+		}
+
+	// leaf loc
+	if (scored) {
+		//randomize next leaf location
+		leaf.x = int8_t(rand() % 230 + 10);
+		leaf.y = int8_t(rand() % 230 + 10);
+		std::cout << leaf.x << std::endl;
+		std::cout << leaf.y << std::endl;
+		std::cout << "----------" << std::endl;
+		
+
+		scored = false;
+	}
+
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -226,58 +273,64 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
 		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
 			// plaid pattern #
-			if (x%4==0) {
-				ppu.background[x+PPU466::BackgroundWidth*y] = 1;
-			} else if (y%4==0) {
-				ppu.background[x+PPU466::BackgroundWidth*y] = 2;
-			}else ppu.background[x+PPU466::BackgroundWidth*y] = 0;
+			// if (x%4==2) {
+			// 	ppu.background[x+PPU466::BackgroundWidth*y] = 1;
+			// } else if (y%4==1) {
+			// 	ppu.background[x+PPU466::BackgroundWidth*y] = 2;
+			// }else ppu.background[x+PPU466::BackgroundWidth*y] = 0;
+			ppu.background[x+PPU466::BackgroundWidth*y] = 0;
 		}
 	}
 
-	//background scroll:
-	ppu.background_position.x = int32_t(-0.5f * player_at.x);
-	ppu.background_position.y = int32_t(-0.5f * player_at.y);
+	// if want background scroll:
+	// ppu.background_position.x = int32_t(-0.5f * player_at.x);
+	// ppu.background_position.y = int32_t(-0.5f * player_at.y);
 
 	//player sprite:
+	// 0: head 
+	// 1: front leg
+	// 59: back leg
+	// 60: tail
+	// 61: score digit 1
+	// 62: score digit 10
+	// 63: leaf
 	// cat head
 	ppu.sprites[0].x = int8_t(player_at.x);
 	ppu.sprites[0].y = int8_t(player_at.y);
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
 	// cat front leg
-	ppu.sprites[1].x = int8_t(player_at.x-8);
-	ppu.sprites[1].y = int8_t(player_at.y);
+	ppu.sprites[1].x = int8_t(player_at.x-3);
+	ppu.sprites[1].y = int8_t(player_at.y-7);
 	ppu.sprites[1].index = 33;
 	ppu.sprites[1].attributes = 7;
 	// cat back leg
-	ppu.sprites[2].x = int8_t(player_at.x-16);
-	ppu.sprites[2].y = int8_t(player_at.y);
-	ppu.sprites[2].index = 36;
-	ppu.sprites[2].attributes = 7;
+	ppu.sprites[59].x = int8_t(player_at.x-11);
+	ppu.sprites[59].y = int8_t(player_at.y-7);
+	ppu.sprites[59].index = 36;
+	ppu.sprites[59].attributes = 7;
 	// cat tail
-	ppu.sprites[3].x = int8_t(player_at.x-24);
-	ppu.sprites[3].y = int8_t(player_at.y);
-	ppu.sprites[3].index = 37;
-	ppu.sprites[3].attributes = 7;
+	ppu.sprites[60].x = int8_t(player_at.x-19);
+	ppu.sprites[60].y = int8_t(player_at.y-7);
+	ppu.sprites[60].index = 37;
+	ppu.sprites[60].attributes = 7;
 
 	// leaf sprite at random location:
-	std::default_random_engine generator;
-	std::uniform_int_distribution<int> distribution(1,PPU466::ScreenWidth);
-	ppu.sprites[4].x = int8_t(distribution(generator));
-	ppu.sprites[4].y = int8_t(distribution(generator));
-	ppu.sprites[4].index = 47;
-	ppu.sprites[4].attributes = 5;
+	ppu.sprites[63].x = int8_t(leaf.x);
+	ppu.sprites[63].y = int8_t(leaf.y);
+	ppu.sprites[63].index = 47;
+	ppu.sprites[63].attributes = 5;
 
 	// score:
-	ppu.sprites[5].x = (PPU466::ScreenWidth-8);
-	ppu.sprites[5].y = (PPU466::ScreenHeight-8);
-	ppu.sprites[5].index = 45;
-	ppu.sprites[5].attributes = 7;
+	ppu.sprites[61].x = (PPU466::ScreenWidth-20);
+	ppu.sprites[61].y = (PPU466::ScreenHeight-20);
+	ppu.sprites[61].index = score1s;
+	ppu.sprites[61].attributes = 7;
 
-	ppu.sprites[6].x = (PPU466::ScreenWidth-16);
-	ppu.sprites[6].y = (PPU466::ScreenHeight-8);
-	ppu.sprites[6].index = 45;
-	ppu.sprites[6].attributes = 7;
+	ppu.sprites[62].x = (PPU466::ScreenWidth-28);
+	ppu.sprites[62].y = (PPU466::ScreenHeight-20);
+	ppu.sprites[62].index = score10s;
+	ppu.sprites[62].attributes = 7;
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
