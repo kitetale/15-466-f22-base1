@@ -6,6 +6,9 @@
 //for glm::value_ptr() :
 #include <glm/gtc/type_ptr.hpp>
 
+//for load_png :
+#include "load_save_png.hpp"
+
 #include <random>
 
 PlayMode::PlayMode() {
@@ -19,27 +22,14 @@ PlayMode::PlayMode() {
 	//Also, *don't* use these tiles in your game:
 
 	{ //use tiles 0-16 as some weird dot pattern thing:
-		std::array< uint8_t, 8*8 > distance;
-		for (uint32_t y = 0; y < 8; ++y) {
-			for (uint32_t x = 0; x < 8; ++x) {
-				float d = glm::length(glm::vec2((x + 0.5f) - 4.0f, (y + 0.5f) - 4.0f));
-				d /= glm::length(glm::vec2(4.0f, 4.0f));
-				distance[x+8*y] = uint8_t(std::max(0,std::min(255,int32_t( 255.0f * d ))));
-			}
-		}
 		for (uint32_t index = 0; index < 16; ++index) {
 			PPU466::Tile tile;
-			uint8_t t = uint8_t((255 * index) / 16);
+
 			for (uint32_t y = 0; y < 8; ++y) {
 				uint8_t bit0 = 0;
 				uint8_t bit1 = 0;
 				for (uint32_t x = 0; x < 8; ++x) {
-					uint8_t d = distance[x+8*y];
-					if (d > t) {
-						bit0 |= (1 << x);
-					} else {
-						bit1 |= (1 << x);
-					}
+					
 				}
 				tile.bit0[y] = bit0;
 				tile.bit1[y] = bit1;
@@ -48,27 +38,55 @@ PlayMode::PlayMode() {
 		}
 	}
 
-	//use sprite 32 as a "player":
+	//use sprite 32 as a "cat head":
+	
 	ppu.tile_table[32].bit0 = {
-		0b01111110,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b01111110,
+		0,0,0,0,0,0,0,0
 	};
 	ppu.tile_table[32].bit1 = {
-		0b00000000,
-		0b00000000,
-		0b00011000,
-		0b00100100,
-		0b00000000,
-		0b00100100,
-		0b00000000,
-		0b00000000,
+		0,0,0,0,0,0,0,0
 	};
+
+	//used for the cat face (player):
+	ppu.palette_table[7] = {
+		glm::u8vec4(0xff, 0xab, 0x3a, 0xff), //orange
+		glm::u8vec4(0xff, 0xde, 0xb2, 0xff), //light orange
+		glm::u8vec4(0x20, 0x19, 0x19, 0xff), //black
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
+	};
+	// cat body parts
+	ppu.palette_table[6] = {
+		glm::u8vec4(0xff, 0xab, 0x3a, 0xff), //orange
+		glm::u8vec4(0xff, 0xde, 0xb2, 0xff), //light orange
+		glm::u8vec4(0x81, 0x4a, 0x00, 0xff), //brown
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
+	};
+
+	glm::uvec2 size (16,16);
+	std::vector< glm::u8vec4 > data;
+	load_png("catto.png", &size, &data, LowerLeftOrigin); 
+	
+	// data contains pixel color info (all 4 tiles)
+	// 1. loop through and compare to find index of color
+	// sprite 32 is cat head 
+	// sprite 0, 1, 2 are cat body, leg, tail
+
+	for (uint32_t index_i = 0; index_i < 8; ++index_i) { // col
+		for (uint32_t index_j = 0; index_j < 8; ++index_j) { //row
+			glm::u8vec4 pixel = data[index_j + index_i * 16];
+			for (uint16_t index_k = 0; index_k < 4; ++index_k) { // index in palette
+				if (ppu.palette_table[7][index_k] == pixel) {
+					// found the index on palette
+					// bit0 = index_k & 0x1
+					// bit1 = (index_k >> 1) & 0x1
+					ppu.tile_table[32].bit0[index_i] = (ppu.tile_table[32].bit0[index_i]<<1) | (index_k & 0x1);
+					ppu.tile_table[32].bit1[index_i] = (ppu.tile_table[32].bit1[index_i]<<1) | ((index_k >> 1) & 0x1);
+				}
+			}
+		}
+	}
+
+	
 
 	//makes the outside of tiles 0-16 solid:
 	ppu.palette_table[0] = {
@@ -84,22 +102,6 @@ PlayMode::PlayMode() {
 		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
 		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
 		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
-
-	//used for the player:
-	ppu.palette_table[7] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0xff, 0xff, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
-
-	//used for the misc other sprites:
-	ppu.palette_table[6] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x88, 0x88, 0xff, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
 	};
 
 }
@@ -185,12 +187,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		0xff // white
 	);
 
-	//tilemap gets recomputed every frame as some weird plasma thing:
-	//NOTE: don't do this in your game! actually make a map or something :-)
 	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
 		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
-			//TODO: make weird plasma thing
-			ppu.background[x+PPU466::BackgroundWidth*y] = ((x+y)%16);
+			if (x%4==0) {
+				ppu.background[x+PPU466::BackgroundWidth*y] = 0;
+			} else if (y%4==0) {
+				ppu.background[x+PPU466::BackgroundWidth*y] = 1;
+			}else ppu.background[x+PPU466::BackgroundWidth*y] = 15;
 		}
 	}
 
@@ -203,16 +206,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[0].y = int8_t(player_at.y);
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
-
-	//some other misc sprites:
-	for (uint32_t i = 1; i < 63; ++i) {
-		float amt = (i + 2.0f * background_fade) / 62.0f;
-		ppu.sprites[i].x = int8_t(0.5f * PPU466::ScreenWidth + std::cos( 2.0f * M_PI * amt * 5.0f + 0.01f * player_at.x) * 0.4f * PPU466::ScreenWidth);
-		ppu.sprites[i].y = int8_t(0.5f * PPU466::ScreenHeight + std::sin( 2.0f * M_PI * amt * 3.0f + 0.01f * player_at.y) * 0.4f * PPU466::ScreenWidth);
-		ppu.sprites[i].index = 32;
-		ppu.sprites[i].attributes = 6;
-		if (i % 2) ppu.sprites[i].attributes |= 0x80; //'behind' bit
-	}
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
