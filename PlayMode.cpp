@@ -49,6 +49,15 @@ PlayMode::PlayMode() {
 			0,0,0,0,0,0,0,0
 		};
 	}
+	// PALETTE TABLE INITS
+
+	// background
+	ppu.palette_table[0] = {
+		glm::u8vec4(0x9a, 0xc3, 0xff, 0xff), //blue
+		glm::u8vec4(0xff, 0x9a, 0x9a, 0xff), //pink
+		glm::u8vec4(0xc4, 0x9a, 0xff, 0xff), //purple
+		glm::u8vec4(0x00, 0x00, 0x00, 0x00), //clear
+	};
 
 	//used for the cat face (player):
 	ppu.palette_table[7] = {
@@ -123,6 +132,17 @@ PlayMode::PlayMode() {
 		}
 	}
 
+	//background tiles (3 colors of tiles)
+	for (uint16_t index = 0; index < 8; ++index) {
+		ppu.tile_table[0].bit0[index] = 0b00000000;
+		ppu.tile_table[1].bit0[index] = 0b11111111;
+		ppu.tile_table[2].bit0[index] = 0b00000000;
+
+		ppu.tile_table[0].bit1[index] = 0b00000000;
+		ppu.tile_table[1].bit1[index] = 0b00000000;
+		ppu.tile_table[2].bit1[index] = 0b11111111;
+	}
+
 }
 
 PlayMode::~PlayMode() {
@@ -193,26 +213,24 @@ void PlayMode::update(float elapsed) {
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+
+	//keeps track of everything here 
+	//update value here 
+	//fixed time update 
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//--- set ppu state based on game state ---
 
-	//background color will be some hsv-like fade:
-	ppu.background_color = glm::u8vec4(
-		0xFFB98F, //orange pastel
-		0xFF9B86, //redish pastel
-		0xD8D6D6, //light gray
-		0xff // white
-	);
-
+	// ????????????????
 	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
 		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
+			// plaid pattern #
 			if (x%4==0) {
-				ppu.background[x+PPU466::BackgroundWidth*y] = 0;
-			} else if (y%4==0) {
 				ppu.background[x+PPU466::BackgroundWidth*y] = 1;
-			}else ppu.background[x+PPU466::BackgroundWidth*y] = 15;
+			} else if (y%4==0) {
+				ppu.background[x+PPU466::BackgroundWidth*y] = 2;
+			}else ppu.background[x+PPU466::BackgroundWidth*y] = 0;
 		}
 	}
 
@@ -248,7 +266,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[4].x = int8_t(distribution(generator));
 	ppu.sprites[4].y = int8_t(distribution(generator));
 	ppu.sprites[4].index = 47;
-	ppu.sprites[4].attributes = 7;
+	ppu.sprites[4].attributes = 5;
 
 	// score:
 	ppu.sprites[5].x = (PPU466::ScreenWidth-8);
@@ -264,3 +282,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//--- actually draw ---
 	ppu.draw(drawable_size);
 }
+
+// Questions:
+// - Palette table index not switching palette.. //change .attributes palette index
+// - How does background works?

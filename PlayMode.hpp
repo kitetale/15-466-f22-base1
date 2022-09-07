@@ -29,6 +29,12 @@ struct PlayMode : Mode {
 	//player position:
 	glm::vec2 player_at = glm::vec2(30.0f,0.0f);
 
+	//keeping track of score:
+	uint16_t score = 0;
+
+	//each tile location
+	//std::deque < glm::vec2 > positions {glm::vec2(), glem::vec2(), }
+
 	//----- drawing handled by PPU466 -----
 
 	PPU466 ppu;
