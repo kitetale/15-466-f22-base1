@@ -26,6 +26,9 @@ struct PlayMode : Mode {
 	//some weird background animation:
 	float background_fade = 0.0f;
 
+	//player speed 
+	float PlayerSpeed = 30.0f;
+
 	//player position:
 	glm::vec2 player_at = glm::vec2(30.0f,10.0f);
 
@@ -41,7 +44,9 @@ struct PlayMode : Mode {
 	uint16_t score10s = 45; //tile index for 0
 
 	//each tile location
-	//std::deque < glm::vec2 > positions {glm::vec2(), glem::vec2(), }
+	// starting with front leg location (head above front leg)
+	std::deque < glm::vec2 > positions {glm::vec2(27.0f, 3.0f),glm::vec2(19.0f, 3.0f),glm::vec2(11.0f, 3.0f)};
+
 
 	//----- drawing handled by PPU466 -----
 

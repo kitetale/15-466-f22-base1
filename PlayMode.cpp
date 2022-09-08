@@ -19,7 +19,7 @@ PlayMode::PlayMode() {
 	//  make yourself a script that spits out the code that you paste in here
 	//   and check that script into your repository.
 
-	//Also, *don't* use these tiles in your game:
+	space.pressed = 1;
 
 	{ //use tiles 0-16 as some weird dot pattern thing:
 		for (uint32_t index = 0; index < 16; ++index) {
@@ -199,8 +199,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-
-	constexpr float PlayerSpeed = 30.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
 	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
@@ -212,9 +210,23 @@ void PlayMode::update(float elapsed) {
 	up.downs = 0;
 	down.downs = 0;
 
-	//keeps track of everything here 
-	//update value here 
-	//fixed time update 
+	//update positions if not stationary
+	if (!space.pressed) {
+		glm::vec2 new_pos = player_at;
+		if (left.pressed) {
+			new_pos.x += 8;
+		} else if (right.pressed) {
+			new_pos.x -= 8;
+		} else if (up.pressed) {
+			new_pos.y -= 8;
+		} else if (down.pressed) {
+			new_pos.y += 8;
+		}
+		positions.push_front(new_pos);
+		positions.pop_back();
+	}
+	
+
 
 	// update score if ate leaf
 	if (player_at.x > leaf.x-4 &&
@@ -223,7 +235,21 @@ void PlayMode::update(float elapsed) {
 		player_at.y < leaf.y+4 &&
 		score < 100) {
 			++score;
+			PlayerSpeed += 5.0f;
 			scored = true;
+			//update positions vector for snake effect
+			glm::vec2 new_pos = player_at;
+			if (left.pressed) {
+				new_pos.x += 8;
+			} else if (right.pressed) {
+				new_pos.x -= 8;
+			} else if (up.pressed) {
+				new_pos.y -= 8;
+			} else if (down.pressed) {
+				new_pos.y += 8;
+			}
+			positions.push_front(new_pos);
+			positions.pop_back();
 			// update score sprite tile index
 			switch (score % 10) {
 				case 1: score1s = 34; break;
@@ -254,13 +280,9 @@ void PlayMode::update(float elapsed) {
 	// leaf loc
 	if (scored) {
 		//randomize next leaf location
-		leaf.x = int8_t(rand() % 230 + 10);
-		leaf.y = int8_t(rand() % 230 + 10);
-		std::cout << leaf.x << std::endl;
-		std::cout << leaf.y << std::endl;
-		std::cout << "----------" << std::endl;
-		
-
+		leaf.x = rand() % 200 + 30;
+		leaf.y = rand() % 200 + 10;
+	
 		scored = false;
 	}
 
@@ -269,7 +291,6 @@ void PlayMode::update(float elapsed) {
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//--- set ppu state based on game state ---
 
-	// ????????????????
 	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
 		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
 			// plaid pattern #
@@ -278,7 +299,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			// } else if (y%4==1) {
 			// 	ppu.background[x+PPU466::BackgroundWidth*y] = 2;
 			// }else ppu.background[x+PPU466::BackgroundWidth*y] = 0;
-			ppu.background[x+PPU466::BackgroundWidth*y] = 0;
+			ppu.background[x+PPU466::BackgroundWidth*y] = score10s % 3;
 		}
 	}
 
@@ -300,18 +321,39 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
 	// cat front leg
-	ppu.sprites[1].x = int8_t(player_at.x-3);
-	ppu.sprites[1].y = int8_t(player_at.y-7);
+	ppu.sprites[1].x = positions[0].x;
+	ppu.sprites[1].y = positions[0].y;
 	ppu.sprites[1].index = 33;
 	ppu.sprites[1].attributes = 7;
+
+	// pop tail pos from back, insert player pos at front 
+
+	//cat body based on score
+	for (uint16_t body = 0; body < score; ++body) {
+		ppu.sprites[body+2].x = positions[body].x; //+2 to offset head/front leg sprite
+		ppu.sprites[body+2].y = positions[body].y;
+		if (left.pressed) {
+			ppu.sprites[body+2].x += 8*body;
+		} else if (right.pressed) {
+			ppu.sprites[body+2].x -= 8*body;
+		} else if (up.pressed) {
+			ppu.sprites[body+2].y -= 8*body;
+		} else if (down.pressed) {
+			ppu.sprites[body+2].y += 8*body;
+		}
+		ppu.sprites[body+2].index = 46;
+		ppu.sprites[body+2].attributes = 6;
+	}
+
+
 	// cat back leg
-	ppu.sprites[59].x = int8_t(player_at.x-11);
-	ppu.sprites[59].y = int8_t(player_at.y-7);
+	ppu.sprites[59].x = positions[positions.size()-2].x;
+	ppu.sprites[59].y = positions[positions.size()-2].y;
 	ppu.sprites[59].index = 36;
 	ppu.sprites[59].attributes = 7;
 	// cat tail
-	ppu.sprites[60].x = int8_t(player_at.x-19);
-	ppu.sprites[60].y = int8_t(player_at.y-7);
+	ppu.sprites[60].x = positions[positions.size()-1].x;
+	ppu.sprites[60].y = positions[positions.size()-1].y;
 	ppu.sprites[60].index = 37;
 	ppu.sprites[60].attributes = 7;
 
