@@ -226,6 +226,7 @@ void PlayMode::update(float elapsed) {
 		player_at.y > leaf.y-4 &&
 		player_at.y < leaf.y+4 &&
 		score < 100) {
+			++max;
 			++score;
 			++threshold;
 			PlayerSpeed += 5.0f;
@@ -374,6 +375,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		ppu.sprites[body+3].y = int8_t(player_at.y-7);
 		ppu.sprites[body+2].index = 46;
 		ppu.sprites[body+2].attributes = 6;
+	}
+	// if deleted, move out of screen
+	if (threshold < max) {
+		for (uint16_t i = threshold; i <= max; ++i) {
+			ppu.sprites[i+3].x = 8;
+			ppu.sprites[i+3].y = 8;
+		}
 	}
 
 	// cat back leg

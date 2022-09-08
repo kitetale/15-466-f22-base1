@@ -47,6 +47,7 @@ struct PlayMode : Mode {
 	//keeping track of score:
 	uint16_t score = 0;
 	uint16_t threshold = 0;
+	uint16_t max = 0;
 	uint16_t score1s = 45; //tile index for 0
 	uint16_t score10s = 45; //tile index for 0
 
