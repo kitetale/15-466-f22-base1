@@ -12,13 +12,6 @@
 #include <random>
 
 PlayMode::PlayMode() {
-	//TODO:
-	// you *must* use an asset pipeline of some sort to generate tiles.
-	// don't hardcode them like this!
-	// or, at least, if you do hardcode them like this,
-	//  make yourself a script that spits out the code that you paste in here
-	//   and check that script into your repository.
-
 	space.pressed = 1;
 
 	{ //use tiles 0-16 as some weird dot pattern thing:
@@ -204,29 +197,28 @@ void PlayMode::update(float elapsed) {
 	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
 	if (up.pressed) player_at.y += PlayerSpeed * elapsed;
 
+	if (player_at.x <= 16+threshold*8 || player_at.x >= PPU466::ScreenWidth
+		|| player_at.y <= 0 || player_at.y >= PPU466::ScreenHeight) {
+			player_at = glm::vec2(PPU466::ScreenWidth/2, PPU466::ScreenHeight/2);
+			space.pressed = true;
+			left.pressed = false;
+			right.pressed = false;
+			up.pressed = false;
+			down.pressed = false;
+			if (score > 0) --score;
+			if (threshold > 0) --threshold;
+			else {
+				score = 0;
+				threshold = 0;
+			}
+			std::cout << "No going out of window!" << std::endl;
+		}
+
 	//reset button press counters:
 	left.downs = 0;
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
-
-	//update positions if not stationary
-	if (!space.pressed) {
-		glm::vec2 new_pos = player_at;
-		if (left.pressed) {
-			new_pos.x += 8;
-		} else if (right.pressed) {
-			new_pos.x -= 8;
-		} else if (up.pressed) {
-			new_pos.y -= 8;
-		} else if (down.pressed) {
-			new_pos.y += 8;
-		}
-		positions.push_front(new_pos);
-		positions.pop_back();
-	}
-	
-
 
 	// update score if ate leaf
 	if (player_at.x > leaf.x-4 &&
@@ -235,21 +227,10 @@ void PlayMode::update(float elapsed) {
 		player_at.y < leaf.y+4 &&
 		score < 100) {
 			++score;
+			++threshold;
 			PlayerSpeed += 5.0f;
 			scored = true;
-			//update positions vector for snake effect
-			glm::vec2 new_pos = player_at;
-			if (left.pressed) {
-				new_pos.x += 8;
-			} else if (right.pressed) {
-				new_pos.x -= 8;
-			} else if (up.pressed) {
-				new_pos.y -= 8;
-			} else if (down.pressed) {
-				new_pos.y += 8;
-			}
-			positions.push_front(new_pos);
-			positions.pop_back();
+
 			// update score sprite tile index
 			switch (score % 10) {
 				case 1: score1s = 34; break;
@@ -276,14 +257,69 @@ void PlayMode::update(float elapsed) {
 				default: score10s = 45; break;
 			}
 		}
+		// decrement score if ate rotten
+		if (player_at.x > rotten.x-4 &&
+		player_at.x < rotten.x+4 &&
+		player_at.y > rotten.y-4 &&
+		player_at.y < rotten.y+4 &&
+		score < 100) {
+			if (score <= 0) {
+				player_at = glm::vec2(30.0f,10.0f);
+				space.pressed = true;
+				left.pressed = false;
+				right.pressed = false;
+				up.pressed = false;
+				down.pressed = false;
+				std::cout << "GAME OVER! Starting new game." << std::endl;
+			} else {
+				if (threshold < 16) --score; 
+				--threshold;
+				PlayerSpeed -= 5.0f;
+				dec_score = true;
+
+				// update score sprite tile index
+				switch (score % 10) {
+					case 1: score1s = 34; break;
+					case 2: score1s = 35; break;
+					case 3: score1s = 39; break;
+					case 4: score1s = 38; break;
+					case 5: score1s = 40; break;
+					case 6: score1s = 41; break;
+					case 7: score1s = 42; break;
+					case 8: score1s = 43; break;
+					case 9: score1s = 44; break;
+					default: score1s = 45; break;
+				}
+				switch (score / 10) {
+					case 1: score10s = 34; break;
+					case 2: score10s = 35; break;
+					case 3: score10s = 39; break;
+					case 4: score10s = 38; break;
+					case 5: score10s = 40; break;
+					case 6: score10s = 41; break;
+					case 7: score10s = 42; break;
+					case 8: score10s = 43; break;
+					case 9: score10s = 44; break;
+					default: score10s = 45; break;
+				}
+			}
+		}
 
 	// leaf loc
 	if (scored) {
 		//randomize next leaf location
-		leaf.x = rand() % 200 + 30;
+		leaf.x = rand() % 100 + 50;
 		leaf.y = rand() % 200 + 10;
 	
 		scored = false;
+	}
+	// rotten loc
+	if (dec_score) {
+		//randomize next rotten location
+		rotten.x = rand() % 100 + 50;
+		rotten.y = rand() % 170 + 10;
+
+		dec_score = false;
 	}
 
 }
@@ -310,6 +346,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//player sprite:
 	// 0: head 
 	// 1: front leg
+	// 2: body
 	// 59: back leg
 	// 60: tail
 	// 61: score digit 1
@@ -321,39 +358,32 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[0].index = 32;
 	ppu.sprites[0].attributes = 7;
 	// cat front leg
-	ppu.sprites[1].x = positions[0].x;
-	ppu.sprites[1].y = positions[0].y;
+	ppu.sprites[1].x = int8_t(player_at.x-3);
+	ppu.sprites[1].y = int8_t(player_at.y-7);
 	ppu.sprites[1].index = 33;
 	ppu.sprites[1].attributes = 7;
-
-	// pop tail pos from back, insert player pos at front 
+	// cat body
+	ppu.sprites[2].x = int8_t(player_at.x-11);
+	ppu.sprites[2].y = int8_t(player_at.y-7);
+	ppu.sprites[2].index = 46;
+	ppu.sprites[2].attributes = 6;
 
 	//cat body based on score
-	for (uint16_t body = 0; body < score; ++body) {
-		ppu.sprites[body+2].x = positions[body].x; //+2 to offset head/front leg sprite
-		ppu.sprites[body+2].y = positions[body].y;
-		if (left.pressed) {
-			ppu.sprites[body+2].x += 8*body;
-		} else if (right.pressed) {
-			ppu.sprites[body+2].x -= 8*body;
-		} else if (up.pressed) {
-			ppu.sprites[body+2].y -= 8*body;
-		} else if (down.pressed) {
-			ppu.sprites[body+2].y += 8*body;
-		}
+	for (uint16_t body = 0; body < threshold; ++body) {
+		ppu.sprites[body+3].x = int8_t(player_at.x-19-(body*8)); //+3 to offset head/front leg sprite
+		ppu.sprites[body+3].y = int8_t(player_at.y-7);
 		ppu.sprites[body+2].index = 46;
 		ppu.sprites[body+2].attributes = 6;
 	}
 
-
 	// cat back leg
-	ppu.sprites[59].x = positions[positions.size()-2].x;
-	ppu.sprites[59].y = positions[positions.size()-2].y;
+	ppu.sprites[59].x = int8_t(player_at.x-11-(score*8));
+	ppu.sprites[59].y = int8_t(player_at.y-7);
 	ppu.sprites[59].index = 36;
 	ppu.sprites[59].attributes = 7;
 	// cat tail
-	ppu.sprites[60].x = positions[positions.size()-1].x;
-	ppu.sprites[60].y = positions[positions.size()-1].y;
+	ppu.sprites[60].x = int8_t(player_at.x-19-(score*8));
+	ppu.sprites[60].y = int8_t(player_at.y-7);
 	ppu.sprites[60].index = 37;
 	ppu.sprites[60].attributes = 7;
 
@@ -362,6 +392,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.sprites[63].y = int8_t(leaf.y);
 	ppu.sprites[63].index = 47;
 	ppu.sprites[63].attributes = 5;
+
+	// rotten leaf sprite at random location:
+	ppu.sprites[58].x = int8_t(rotten.x);
+	ppu.sprites[58].y = int8_t(rotten.y);
+	ppu.sprites[58].index = 47;
+	ppu.sprites[58].attributes = 6;
 
 	// score:
 	ppu.sprites[61].x = (PPU466::ScreenWidth-20);
