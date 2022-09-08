@@ -1,6 +1,7 @@
 # CON-CAT
 
 Author: Ashley Kim (ayk2)
+
 Date : 9/8/2022
 
 Design: CON-CAT is a game that elongates the cat as it eats the healthy catnip. If it consumes rotten catnip or leave its boundary, then it will crouch. 
@@ -10,9 +11,10 @@ Screen Shot:
 ![Screen Shot](screenshot.png)
 ![Another Screen Shot](screenshot2.png)
 
-How My Asset Pipeline Works:
+## How My Asset Pipeline Works: ##
 
 TLDR; 4x4 tile (each tile is 8x8 px) designs imported as one png and parsed in code to separate tiles.
+
 
 
 Sprite is imported with `load_png` function in `load_save_png.hpp` using [catto_num_leaf.png](catto_num_leaf.png) as an input source. I drew 16 tile designs and imported as one png file (5 cat parts, 1 leaf, 10 numbers).
@@ -23,7 +25,7 @@ Now that I have palette and tile designs, I drew the wanted design and color of 
 
 
 
-How To Play:
+## How To Play: ##
 
 **PRESS** up/down/left/right to go in corresponding direction. 
 (No need to constantly press down! It has a set speed that accelerates based on score)
